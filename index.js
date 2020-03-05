@@ -1,93 +1,136 @@
-
-/**
- * This example shows how to plot points on a map
- * and how to work with normal geographical data that
- * is not in GeoJSON form
- *
- * Outline:
- * 1. show how to load multiple files of data
- * 2. talk about how geoAlbers() is a scaling function
- * 3. show how to plot points with geoAlbers
- */
-const m = {
+"use strict";
+(function(){
+  let rawData = ""
+  let neighbourData = ""
+  let hostData = ""
+  let neighbourHostData = ""
+  let calendarData = ""
+  let m = {
     width: 800,
     height: 800
-}
+  }
+  d3.select("body").append('select').attr("id","select")
+  d3.csv('data/neighbourhoods.csv').then(function(data){
+    d3.select('#select')
+      .on('change',changeN)
+      .selectAll("myOptions")
+        .data(['University District'].concat(d3.map(data, function(d){return(d.neighbourhood)}).keys()))
+      .enter()
+        .append('option')
+      .text(function(d){return d;})
+      .attr("value", function(d){return d;})
+  })
 
-const svg = d3.select("body").append('svg')
-    .attr('width', m.width)
-    .attr('height', m.height)
+  let neighbourhood = 'University District'
 
-const g = svg.append('g')
+  const svg = d3.select("body").append('svg')
+      .attr('width', m.width)
+      .attr('height', m.height)
 
-// neighborhoods.json taken from rat map example
-d3.json('data/neighbourhoods.geojson').then(function(data) {
+  const g = svg.append('g')
+  let div = d3.select("body").append('div')
+      .attr("class", "tooltip")
+      .style("opacity", 0)
+  let tooltipSvg = div.append("svg")
+      .attr('width', 500)
+      .attr('height', 500);
+  // neighborhoods.json taken from rat map example
+  d3.csv("data/listings.csv").then(plotData=>hostData=plotData)
+  d3.csv('data/calendar.csv').then(data=>calendarData = data)
+  d3.json('data/N2.geojson').then((data)=>rawData=data).then(plotMap)
 
-    d3.csv('data/listings.csv').then(function(pointData) {
+  function plotMap() {
+    neighbourData = {"type":rawData.type,"features":rawData.features.filter(function(d){return d.properties.name == neighbourhood})}
+    let latMid = d3.extent(neighbourData.features[0].geometry.coordinates[0], d => d[0])
+    let longMid = d3.extent(neighbourData.features[0].geometry.coordinates[0], d => d[1])
+    let albersProj = d3.geoAlbers()
+                .scale(1300000)
+                .rotate([-1*(latMid[0] + latMid[1])/2, 0])
+                .center([0, (longMid[0] + longMid[1])/2])
+                .translate([m.width/2, m.height/2]);
+    let geoPath = d3.geoPath().projection(albersProj)
+    g.selectAll('path')
+      .data(neighbourData.features)
+      .enter()
+      .append('path')
+          .attr('fill', '#ccc')
+          .attr('d', geoPath)
+    plotPoint(albersProj)
+  }
 
-        const albersProj = d3.geoAlbers()
-            .scale(150000)
-            .rotate([122.340, 0])
-            .center([0, 47.607])
-            .translate([m.width/2, m.height/2]);
-
-        // this code shows what albersProj really does
-        let point = pointData[0]
-        let arr = [ parseFloat(point['longitude']) , parseFloat(point['latitude']) ]
-        let scaled = albersProj(arr)
-
-        const geoPath = d3.geoPath()
-        .projection(albersProj)
-
-        g.selectAll('path')
-        .data(data.features)
+  function plotPoint(albersProj){
+    neighbourHostData = hostData.filter(function(d){return d.neighbourhood == neighbourhood})
+    g.selectAll('.circle')
+        .data(neighbourHostData)
         .enter()
-        .append('path')
-            .attr('fill', '#ccc')
-            .attr('d', geoPath)
-        // let div = d3.select("body").append("div")
-        // .attr("class", "tooltip")
-        // .style("opacity", 0);
-        // plots circles on the boston map
-        g.selectAll('.circle')
-            .data(pointData)
-            .enter()
-            .append('circle')
-                .attr('cx', function(d) {
-                    let scaledPoints = albersProj([parseFloat(d['longitude']) , parseFloat(d['latitude'])])
-                    return scaledPoints[0]
-                })
-                .attr('cy', function(d) {
-                    let scaledPoints = albersProj([parseFloat(d['longitude']) , parseFloat(d['latitude'])])
-                    return scaledPoints[1]
-                })
-                .attr('r', 1)
-                .attr('fill', 'steelblue')
-                // .on("mouseover", (d) => {
-                //   div.transition()
-                //     .duration(200)
-                //     .style("opacity", .9);
-                //   div.html(d['neighbourhood_group'] + "<br/>" + d['room_type'] + "<br/>" + d['price'])
-                //     .style("left", (d3.event.pageX) + "px")
-                //     .style("top", (d3.event.pageY - 42) + "px");
-                // })
-                // .on("mouseout", (d) => {
-                //   div.transition()
-                //     .duration(500)
-                //     .style("opacity", 0);
-                // })
-                .on( "click", function(){
-                  d3.select(this)
-                    .attr("opacity",1)
-                    .transition()
-                    .duration( 1000 )
-                    .attr( "cx", m.width * Math.round( Math.random() ) )
-                    .attr( "cy", m.height * Math.round( Math.random() ) )
-                    .attr( "opacity", 0 )
-                    .on("end",function(){
-                      d3.select(this).remove();
-                    })
-                })
-    })
+        .append('circle')
+            .attr('cx', function(d) {
+                let scaledPoints = albersProj([parseFloat(d['longitude']) , parseFloat(d['latitude'])])
+                return scaledPoints[0]
+            })
+            .attr('cy', function(d) {
+                let scaledPoints = albersProj([parseFloat(d['longitude']) , parseFloat(d['latitude'])])
+                return scaledPoints[1]
+            })
+            .attr('r', 5)
+            .attr('fill', 'steelblue')
+            .on("mouseover", (d) => {
+              plotTooltip(d.id, d.host_name)
+              div.transition()
+                .duration(200)
+                .style("opacity", .9);
+              div.style("left", (d3.event.pageX) + "px")
+                .style("top", (d3.event.pageY - 42) + "px");
+            })
+            .on("mouseout", (d) => {
+              tooltipSvg.selectAll('*').remove();
+              div.transition()
+                .duration(500)
+                .style("opacity", 0);
+            })
+    }
 
-})
+  function plotTooltip(id, host) {
+    let hostData = calendarData.filter(function(d){return parseInt(d.listing_id) == id});
+    let priceLimits = d3.extent(hostData, d => parseInt(d['price'].replace("$","")))
+    // get scaling function for years (x axis)
+    let yScale = d3.scaleLinear()
+        .domain([priceLimits[1], priceLimits[0]])
+        .range([25,450])
+    let yAxis2 = tooltipSvg.append("g")
+        .attr("transform", "translate(450,0)")
+        .call(d3.axisRight(yScale))
+    // get min and max life expectancy for US
+
+    let dateLimits = d3.extent(hostData, d => new Date(d["date"]))
+    // get scaling function for y axis
+    let xScale = d3.scaleTime()
+        .domain([dateLimits[0], dateLimits[1]])
+        .range([25,450])
+    let xAxis2 = tooltipSvg.append("g")
+        .attr("transform", "translate(0,450)")
+        .call(d3.axisBottom(xScale))
+    let line = d3.line()
+        .x(d => xScale(new Date(d['date']))) // set the x values for the line generator
+        .y(d => yScale(parseInt(d['price'].replace("$","")))) // set the y values for the line generator
+    // append line to svg
+    tooltipSvg.append("path")
+        // difference between data and datum:
+        // https://stackoverflow.com/questions/13728402/what-is-the-difference-d3-datum-vs-data
+        .datum(hostData)
+        .attr("d", function(d) { return line(d) })
+        .attr("fill", 'none')
+        .attr("stroke", "steelblue")
+    tooltipSvg.append("text")
+      .attr('x', 100)
+      .attr('y', 20)
+      .attr('font-size', '10pt')
+      .text('Time vs price of ' + host + '\'s house in ' + neighbourhood)
+  }
+
+  function changeN(e) {
+    g.selectAll('*').remove()
+    neighbourhood = d3.select(this).property("value")
+    plotMap();
+  }
+})();
