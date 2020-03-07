@@ -41,9 +41,18 @@
   // d3.json('data/N2.geojson').then((data)=>rawData=data)
 
   // small dataset
+  showLoading()
   d3.csv("data/listings.csv").then(plotData=>hostData=plotData)
-  d3.csv('data/calendar.csv').then(data=>calendarData = data)
-  d3.json('data/N2.geojson').then((data)=>rawData=data).then(plotMap)
+    .then(function(data){d3.csv('data/calendar.csv').then(data=>calendarData = data)
+    .then(function(data){d3.json('data/N2.geojson').then((data)=>rawData=data)
+      .then(function(){
+        d3.select('#loading').remove();
+        plotMap()
+      })
+    })
+  })
+
+
 
   function plotMap() {
     neighbourData = {"type":rawData.type,"features":rawData.features.filter(function(d){return d.properties.name == neighbourhood})}
@@ -137,9 +146,17 @@
   }
 
   function changeN(e) {
-    g.selectAll('*').remove()
+    g.selectAll("*").remove();
     neighbourhood = d3.select(this).property("value")
-    console.log(neighbourhood)
     plotMap();
+  }
+
+  function showLoading() {
+    svg.append('text')
+      .attr('x', 330)
+      .attr('y', 390)
+      .attr('id', 'loading')
+      .attr('font-size', '10pt')
+      .text('Loading...')
   }
 })();
