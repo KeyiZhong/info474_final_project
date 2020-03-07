@@ -34,7 +34,13 @@
   let tooltipSvg = div.append("svg")
       .attr('width', 500)
       .attr('height', 500);
-  // neighborhoods.json taken from rat map example
+
+  // large dataset
+  // d3.csv("data/listing.csv").then(plotData=>hostData=plotData).then(plotMap)
+  // d3.csv('data/calendar.csv').then(data=>calendarData = data)
+  // d3.json('data/N2.geojson').then((data)=>rawData=data)
+
+  // small dataset
   d3.csv("data/listings.csv").then(plotData=>hostData=plotData)
   d3.csv('data/calendar.csv').then(data=>calendarData = data)
   d3.json('data/N2.geojson').then((data)=>rawData=data).then(plotMap)
@@ -60,6 +66,7 @@
 
   function plotPoint(albersProj){
     neighbourHostData = hostData.filter(function(d){return d.neighbourhood == neighbourhood})
+    // neighbourHostData = hostData.filter(function(d){return d.neighbourhood_cleansed == neighbourhood})
     g.selectAll('.circle')
         .data(neighbourHostData)
         .enter()
@@ -72,6 +79,7 @@
                 let scaledPoints = albersProj([parseFloat(d['longitude']) , parseFloat(d['latitude'])])
                 return scaledPoints[1]
             })
+            // .attr('r', function(d){return d.price/80})
             .attr('r', 5)
             .attr('fill', 'steelblue')
             .on("mouseover", (d) => {
@@ -131,6 +139,7 @@
   function changeN(e) {
     g.selectAll('*').remove()
     neighbourhood = d3.select(this).property("value")
+    console.log(neighbourhood)
     plotMap();
   }
 })();
