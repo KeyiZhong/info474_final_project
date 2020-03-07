@@ -43,7 +43,7 @@
   // small dataset
   showLoading()
   d3.csv("data/listings.csv").then(plotData=>hostData=plotData)
-    .then(function(data){d3.csv('data/calendar.csv').then(data=>calendarData = data)
+    .then(function(data){d3.csv('calendar.csv').then(data=>calendarData = data)
     .then(function(data){d3.json('data/N2.geojson').then((data)=>rawData=data)
       .then(function(){
         d3.select('#loading').remove();
