@@ -3,18 +3,21 @@
   let rawData = ""
   let neighbourData = ""
   let hostData = ""
-  let neighbourHostData = ""
+  let listData = ""
   let calendarData = ""
   let m = {
     width: 800,
     height: 800
   }
+  const zoom = d3.zoom()
+      .scaleExtent([-8, 8])
+      .on('zoom', zoomed);
   d3.select("body").append('select').attr("id","select")
   d3.csv('data/neighbourhoods.csv').then(function(data){
     d3.select('#select')
       .on('change',changeN)
       .selectAll("myOptions")
-        .data(['University District'].concat(d3.map(data, function(d){return(d.neighbourhood)}).keys()))
+        .data(['University District(select a neighbourhood)'].concat(d3.map(data, function(d){return(d.neighbourhood)}).keys()))
       .enter()
         .append('option')
       .text(function(d){return d;})
@@ -28,6 +31,7 @@
       .attr('height', m.height)
 
   const g = svg.append('g')
+  svg.call(zoom);
   let div = d3.select("body").append('div')
       .attr("class", "tooltip")
       .style("opacity", 0)
@@ -42,7 +46,7 @@
 
   // small dataset
   showLoading()
-  d3.csv("data/listings.csv").then(plotData=>hostData=plotData)
+  d3.csv("data/listings.csv").then(plotData=>listData=plotData)
     .then(function(data){d3.csv('calendar.csv').then(data=>calendarData = data)
     .then(function(data){d3.json('data/N2.geojson').then((data)=>rawData=data)
       .then(function(){
@@ -52,32 +56,98 @@
     })
   })
 
-
-
+  // plot the map of seattle
   function plotMap() {
-    neighbourData = {"type":rawData.type,"features":rawData.features.filter(function(d){return d.properties.name == neighbourhood})}
-    let latMid = d3.extent(neighbourData.features[0].geometry.coordinates[0], d => d[0])
-    let longMid = d3.extent(neighbourData.features[0].geometry.coordinates[0], d => d[1])
     let albersProj = d3.geoAlbers()
-                .scale(1300000)
-                .rotate([-1*(latMid[0] + latMid[1])/2, 0])
-                .center([0, (longMid[0] + longMid[1])/2])
-                .translate([m.width/2, m.height/2]);
+                      .scale(170000)
+                      .rotate([122.340, 0])
+                      .center([0, 47.607])
+                      .translate([m.width/2, m.height/2]);
     let geoPath = d3.geoPath().projection(albersProj)
     g.selectAll('path')
-      .data(neighbourData.features)
+      .data(rawData.features)
       .enter()
       .append('path')
-          .attr('fill', '#ccc')
+          .attr('fill', d=>d.properties.name==neighbourhood?'yellow':'#ccc')
           .attr('d', geoPath)
+          .attr('id', d=>d.properties.name==neighbourhood?'highlighted':'normal')
+    g.selectAll('#highlighted')
+      .on('click', function(d){clickZoom(d,geoPath)})
     plotPoint(albersProj)
   }
 
+  // zoom effect to a highlighted area
+  let centered
+  function clickZoom(d,path) {
+    let x,y,k;
+    if (d && centered !== d) {
+      // zoom in
+      let centroid = path.centroid(d);
+      x = centroid[0];
+      y = centroid[1];
+      k = 4;
+      centered = d;
+    } else {
+      // zoom out
+      x = 400;
+      y = 400;
+      k = 1;
+      centered = null;
+    }
+    g.selectAll("path")
+        .classed("active", centered && function(d) { return d === centered; });
+    g.transition()
+        .duration(750)
+        .attr("transform", "translate(400,400)scale(" + k + ")translate(" + -x + "," + -y + ")")
+        .style("stroke-width", 1.5 / k + "px");
+  }
+
+  // pan and zoom effect to map
+  function zoomed() {
+        g.selectAll('path') // To prevent stroke width from scaling
+          .attr('transform', d3.event.transform);
+        g.selectAll('circle') // To prevent stroke width from scaling
+          .attr('transform', d3.event.transform);
+  }
+
+  function drawLegend(cScale) {
+    let defs = svg.append("defs");
+    let linearGradient = defs.append("linearGradient")
+        .attr("id", "linear-gradient");
+    linearGradient.append("stop")
+        .attr("offset", "0%")
+        .attr("stop-color", 'lightblue');
+    linearGradient.append("stop")
+        .attr("offset", "100%")
+        .attr("stop-color", "darkblue");
+    svg.append("rect")
+        .attr("width", 200)
+        .attr("height", 20)
+        .attr("transform", "translate(40,40)rotate(90)")
+        .style("fill", "url(#linear-gradient)");
+    let y = d3.scaleLinear()
+      .range([0, 200])
+      .domain([20, 500]);
+    let yAxis = d3.axisRight()
+      .scale(y)
+      .ticks(5);
+    svg.append("g")
+      .attr("transform", "translate(40,40)")
+      .call(yAxis)
+      .append("text")
+      .style("text-anchor", "end")
+      .text("axis title");
+  }
+
   function plotPoint(albersProj){
-    neighbourHostData = hostData.filter(function(d){return d.neighbourhood == neighbourhood})
+    // neighbourHostData = hostData.filter(function(d){return d.neighbourhood == neighbourhood})
     // neighbourHostData = hostData.filter(function(d){return d.neighbourhood_cleansed == neighbourhood})
+    let cScale = d3.scaleLinear()
+        .domain([20, 500])
+        .range(['lightblue','darkblue'])
+    drawLegend(cScale);
     g.selectAll('.circle')
-        .data(neighbourHostData)
+        .data(listData)
         .enter()
         .append('circle')
             .attr('cx', function(d) {
@@ -89,15 +159,15 @@
                 return scaledPoints[1]
             })
             // .attr('r', function(d){return d.price/80})
-            .attr('r', 5)
-            .attr('fill', 'steelblue')
+            .attr('r', 1)
+            .attr('fill', (d)=>cScale(d.price))
             .on("mouseover", (d) => {
               plotTooltip(d.id, d.host_name)
               div.transition()
                 .duration(200)
                 .style("opacity", .9);
-              div.style("left", (d3.event.pageX) + "px")
-                .style("top", (d3.event.pageY - 42) + "px");
+              div.style("left",(d3.event.pageX) + "px")
+                .style("top", d3.event.pageY>300?"300px":(d3.event.pageY - 42) + "px");
             })
             .on("mouseout", (d) => {
               tooltipSvg.selectAll('*').remove();
@@ -105,10 +175,10 @@
                 .duration(500)
                 .style("opacity", 0);
             })
-    }
+  }
 
   function plotTooltip(id, host) {
-    let hostData = calendarData.filter(function(d){return parseInt(d.listing_id) == id});
+    hostData = calendarData.filter(function(d){return parseInt(d.listing_id) == id});
     let priceLimits = d3.extent(hostData, d => parseInt(d['price'].replace("$","")))
     // get scaling function for years (x axis)
     let yScale = d3.scaleLinear()
@@ -132,8 +202,6 @@
         .y(d => yScale(parseInt(d['price'].replace("$","")))) // set the y values for the line generator
     // append line to svg
     tooltipSvg.append("path")
-        // difference between data and datum:
-        // https://stackoverflow.com/questions/13728402/what-is-the-difference-d3-datum-vs-data
         .datum(hostData)
         .attr("d", function(d) { return line(d) })
         .attr("fill", 'none')
