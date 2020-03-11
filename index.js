@@ -6,31 +6,27 @@
   let listData = ""
   let calendarData = ""
   let m = {
-    width: 800,
-    height: 800
+    width: 700,
+    height: 700
   }
-  const zoom = d3.zoom()
-      .scaleExtent([-8, 8])
-      .on('zoom', zoomed);
-  d3.select("body").append('select').attr("id","select")
-  d3.csv('data/neighbourhoods.csv').then(function(data){
-    d3.select('#select')
-      .on('change',changeN)
-      .selectAll("myOptions")
-        .data(['University District(select a neighbourhood)'].concat(d3.map(data, function(d){return(d.neighbourhood)}).keys()))
-      .enter()
-        .append('option')
-      .text(function(d){return d;})
-      .attr("value", function(d){return d;})
-  })
-
+  d3.select("body")
+    .append('div')
+    .attr('id','filter')
+  addFilter();
   let neighbourhood = 'University District'
+  // let roomType = ['Entire home/apt', 'Private room', 'Hotel room', 'Shared Room']
 
   const svg = d3.select("body").append('svg')
       .attr('width', m.width)
       .attr('height', m.height)
 
   const g = svg.append('g')
+  const zoom = d3.zoom()
+      .scaleExtent([-8, 8])
+      .on('zoom', function(d){
+        let centered;
+        zoomed();
+      });
   svg.call(zoom);
   let div = d3.select("body").append('div')
       .attr("class", "tooltip")
@@ -56,10 +52,38 @@
     })
   })
 
+  function addFilter() {
+    d3.select('#filter')
+      .append('select')
+      .attr("id","select")
+    d3.csv('data/neighbourhoods.csv').then(function(data){
+      d3.select('#select')
+        .on('change',changeN)
+        .selectAll("myOptions")
+          .data(['University District(select a neighbourhood)'].concat(d3.map(data, function(d){return(d.neighbourhood)}).keys()))
+        .enter()
+          .append('option')
+        .text(function(d){return d;})
+        .attr("value", function(d){return d;})
+    })
+    // d3.select('#filter')
+    //   .append('select')
+    //   .attr("id","selectRoomType")
+    //   .attr("type","checkbox")
+    // d3.select('#selectRoomType')
+    //   .on('change',changeRoomType)
+    //   .selectAll("myOptions")
+    //     .data(['Entire home/apt', 'Private room', 'Hotel room', 'Shared Room'])
+    //   .enter()
+    //     .append('option')
+    //   .text(function(d){return d;})
+    //   .attr("value", function(d){return d;})
+  }
+
   // plot the map of seattle
   function plotMap() {
     let albersProj = d3.geoAlbers()
-                      .scale(170000)
+                      .scale(m.width*m.height/4)
                       .rotate([122.340, 0])
                       .center([0, 47.607])
                       .translate([m.width/2, m.height/2]);
@@ -89,8 +113,8 @@
       centered = d;
     } else {
       // zoom out
-      x = 400;
-      y = 400;
+      x = m.width/2;
+      y = m.height/2;
       k = 1;
       centered = null;
     }
@@ -98,7 +122,7 @@
         .classed("active", centered && function(d) { return d === centered; });
     g.transition()
         .duration(750)
-        .attr("transform", "translate(400,400)scale(" + k + ")translate(" + -x + "," + -y + ")")
+        .attr("transform", "translate("+x+","+y+")scale(" + k + ")translate(" + -x + "," + -y + ")")
         .style("stroke-width", 1.5 / k + "px");
   }
 
@@ -121,12 +145,12 @@
         .attr("offset", "100%")
         .attr("stop-color", "darkblue");
     svg.append("rect")
-        .attr("width", 200)
-        .attr("height", 20)
+        .attr("width", m.width/4)
+        .attr("height", m.height/40)
         .attr("transform", "translate(40,40)rotate(90)")
         .style("fill", "url(#linear-gradient)");
     let y = d3.scaleLinear()
-      .range([0, 200])
+      .range([0, m.width/4])
       .domain([20, 500]);
     let yAxis = d3.axisRight()
       .scale(y)
@@ -142,6 +166,7 @@
   function plotPoint(albersProj){
     // neighbourHostData = hostData.filter(function(d){return d.neighbourhood == neighbourhood})
     // neighbourHostData = hostData.filter(function(d){return d.neighbourhood_cleansed == neighbourhood})
+    // let filteredListData = listData.filter(function(d){return parseInt(d.room_type) == roomType});
     let cScale = d3.scaleLinear()
         .domain([20, 500])
         .range(['lightblue','darkblue'])
@@ -218,6 +243,12 @@
     neighbourhood = d3.select(this).property("value")
     plotMap();
   }
+
+  // function changeRoomType(e) {
+  //   g.selectAll("*").remove();
+  //   roomType = d3.select(this).property("value")
+  //   plotMap();
+  // }
 
   function showLoading() {
     svg.append('text')
