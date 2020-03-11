@@ -16,6 +16,18 @@ div.tooltip {
   pointer-events: none;
 }
 
+h1 {
+  color: #ff5a5f;
+}
+
+h2 {
+  background-color: #fc642d;
+}
+
+button {
+  color: #00a699;
+}
+
 #highlighted:hover {
   cursor: pointer;
 }
