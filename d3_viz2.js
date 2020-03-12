@@ -180,7 +180,7 @@ function makeHistogram(data) {
 
     let monthFilter = d3.select("#filterMonth")
         .append('select')
-    
+
     monthFilter.selectAll('option')
         .data(months)
         .enter()
@@ -214,7 +214,7 @@ function makeHistogram(data) {
 
         d3.select('#y-axis')
             .call(d3.axisLeft(y));
-        
+
         let bar = svg.selectAll(".rect").data(data)
         bar.exit().remove()
 
