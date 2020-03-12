@@ -13,11 +13,11 @@
     }
 
     window.onload = function() {
-        svg = d3.select("body").append("svg")
+        svg = d3.select("#viz2").append("svg")
             .attr("width", 700)
             .attr("height", 700);
 
-        tooltip = d3.select("body").append("div")
+        tooltip = d3.select("#viz2").append("div")
             .attr("class", "tooltip")
             .attr('style', 'position: absolute; opacity: 0;');
 
@@ -38,7 +38,7 @@
             d["monthly_price"] = d["monthly_price"].replace(/[\$,]/g, '')
             d["monthly_price"] = +d["monthly_price"]
         });
-        
+
         let maxprice = d3.max(price);
         console.log(maxprice);
         let minprice = d3.min(price);
@@ -97,7 +97,7 @@
                     .attr("fill", "black")
                     // .text(country);
 
-                // nygeo data which contains information on the overall nyc map 
+                // nygeo data which contains information on the overall nyc map
                 d3.json('data/neighbourhoods.geojson').then(function(mapdata) {
                     // console.log(mapdata)
                     // // data which contains information on individual points
@@ -124,14 +124,14 @@
                             .attr('stroke', 'black')
                             .attr('d', geoPath)
 
-                        // plots circles on the nyc map and adds on-click function 
+                        // plots circles on the nyc map and adds on-click function
                         // that transitions point to new direction + removes point from map.
                         let bnb = tSvg.append( "g" ).attr( "id", "bnb" );
                         bnb.selectAll('.circle')
                             .data(tempData)
                             .enter()
                             .append('circle')
-                                .attr('cx', function(d) { 
+                                .attr('cx', function(d) {
                                     let scaledPoints = albersProj([d['longitude'], d['latitude']])
                                     return scaledPoints[0]
                                 })
@@ -154,9 +154,9 @@
                                             })
                                 });
 
-                        
+
                     // })
-                
+
                 })
             })
             .on("mouseout", function (d) {
