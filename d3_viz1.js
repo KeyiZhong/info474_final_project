@@ -43,7 +43,7 @@
   // small dataset
   showLoading()
   d3.csv("data/listings.csv").then(plotData=>listData=plotData)
-    .then(function(data){d3.csv('calendar.csv').then(data=>calendarData = data)
+    .then(function(data){d3.csv('data/calendar.csv').then(data=>calendarData = data)
     .then(function(data){d3.json('data/N2.geojson').then((data)=>rawData=data)
       .then(function(){
         d3.select('#loading').remove();
@@ -185,7 +185,7 @@
             })
             // .attr('r', function(d){return d.price/80})
             .attr('r', 1)
-            .attr('fill', (d)=>cScale(d.price))
+            .attr('fill', (d)=>cScale(d.price.replace("$","")))
             .on("mouseover", (d) => {
               plotTooltip(d.id, d.host_name)
               div.transition()
