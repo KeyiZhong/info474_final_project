@@ -106,8 +106,8 @@
                         // scaling function to convert point data to map. Rotated to proper lat/long
                         const albersProj = d3.geoAlbers()
                             .scale(75000)
-                            .rotate([122.3321, 0])
-                            .center([0, 47.6062])
+                            .rotate([122.340, 0])
+                            .center([0, 47.607])
                             .translate([325/2, 300/2]);
 
                         // projects points onto the map

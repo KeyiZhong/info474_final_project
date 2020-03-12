@@ -43,7 +43,7 @@
   // small dataset
   showLoading()
   d3.csv("data/listings.csv").then(plotData=>listData=plotData)
-    .then(function(data){d3.csv('data/calendar.csv').then(data=>calendarData = data)
+    .then(function(data){d3.csv('calendar.csv').then(data=>calendarData = data)
     .then(function(data){d3.json('data/N2.geojson').then((data)=>rawData=data)
       .then(function(){
         d3.select('#loading').remove();
@@ -57,6 +57,7 @@
       .append('select')
       .attr("id","select")
     d3.csv('data/neighbourhoods.csv').then(function(data){
+      console.log(data)
       d3.select('#select')
         .on('change',changeN)
         .selectAll("myOptions")
