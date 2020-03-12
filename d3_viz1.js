@@ -82,8 +82,6 @@
 
   // plot the map of seattle
   function plotMap() {
-    console.log(calendarData)
-    console.log(listData)
     console.log(rawData)
     let albersProj = d3.geoAlbers()
                       .scale(m.width*m.height/4)
