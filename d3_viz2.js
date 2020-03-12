@@ -21,7 +21,7 @@
             .attr("class", "tooltip")
             .attr('style', 'position: absolute; opacity: 0;');
 
-        d3.csv("data/listings_1.csv").then(function (data) {
+        d3.csv("data/listings.csv").then(function (data) {
             makeHistogram(data)
         })
     }
@@ -99,7 +99,7 @@
 
                 // nygeo data which contains information on the overall nyc map 
                 d3.json('data/neighbourhoods.geojson').then(function(mapdata) {
-                    console.log(mapdata)
+                    // console.log(mapdata)
                     // // data which contains information on individual points
                     // d3.csv('listings.csv').then(function(pointData) {
 
