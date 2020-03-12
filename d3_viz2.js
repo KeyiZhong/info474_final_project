@@ -21,7 +21,7 @@
             .attr("class", "tooltip")
             .attr('style', 'position: absolute; opacity: 0;');
 
-        d3.csv("data/listings2.csv").then(function (data) {
+        d3.csv("data/listings_1.csv").then(function (data) {
             makeHistogram(data)
         })
     }
