@@ -94,7 +94,6 @@
       .append('path')
           .attr('fill', d=>d.properties.name==neighbourhood?'yellow':'#ccc')
           .attr('d', geoPath)
-          .attr('stroke', 'black')
           .attr('id', d=>d.properties.name==neighbourhood?'highlighted':'normal')
     g.selectAll('#highlighted')
       .on('click', function(d){clickZoom(d,geoPath)})
